@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Rishab Sah — Builder. Shipper. Operator.</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #05070e;
+  --bg2: #090c17;
+  --bg3: #0e1220;
+  --red: #00aaff;
+  --red-dim: rgba(0,170,255,0.07);
+  --red-glow: rgba(0,170,255,0.22);
+  --amber: #5cc8ff;
+  --green: #00ff88;
+  --text: #dde8f5;
+  --muted: #3d5068;
+  --muted2: #243040;
+  --border: #111827;
+  --border2: #1a2640;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ── CURSOR ── */
+#cur {
+  width: 6px; height: 6px;
+  background: var(--red);
+  position: fixed; border-radius: 50%;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: width .15s, height .15s;
+  box-shadow: 0 0 10px var(--red);
+}
+#cur-ring {
+  width: 28px; height: 28px;
+  border: 1px solid rgba(255,45,45,0.4);
+  border-radius: 50%;
+  position: fixed; pointer-events: none; z-index: 9998;
+  transform: translate(-50%,-50%);
+  transition: left .08s, top .08s, width .15s, height .15s;
+}
+
+/* ── SCANLINE OVERLAY ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,0,0,0.08) 2px,
+    rgba(0,0,0,0.08) 4px
+  );
+  pointer-events: none; z-index: 999;
+}
+
+/* ── NOISE TEXTURE ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: 0.4; pointer-events: none; z-index: 0;
+}
+
+/* ── TOP STATUS BAR ── */
+.statusbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 36px;
+  background: #000;
+  border-bottom: 1px solid var(--border2);
+  font-size: 10px; letter-spacing: .12em; text-transform: uppercase;
+}
+.sb-left { display: flex; align-items: center; gap: 24px; color: var(--muted); }
+.sb-left .active { color: var(--green); }
+.sb-left .active::before {
+  content: '●'; margin-right: 6px;
+  animation: blink 2s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.sb-right { display: flex; gap: 20px; color: var(--muted); }
+.sb-right span { color: var(--amber); }
+.ticker {
+  display: flex; gap: 32px; overflow: hidden;
+  font-size: 9px; color: var(--muted);
+}
+.ticker-item { white-space: nowrap; }
+.ticker-item b { color: var(--green); }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 36px; left: 0; right: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 52px;
+  background: rgba(8,8,8,0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border2);
+}
+.nav-id {
+  font-size: 13px; font-weight: 600; letter-spacing: .04em;
+  color: var(--text);
+}
+.nav-id span { color: var(--red); }
+.nav-links { display: flex; gap: 0; }
+.nav-links a {
+  font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted); text-decoration: none;
+  padding: 0 18px; height: 52px;
+  display: flex; align-items: center;
+  border-left: 1px solid var(--border2);
+  transition: color .2s, background .2s;
+}
+.nav-links a:hover { color: var(--text); background: var(--bg2); }
+.nav-hire {
+  font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: #000; background: var(--red);
+  padding: 8px 20px; border: none; cursor: pointer;
+  text-decoration: none;
+  transition: background .2s;
+  animation: redpulse 3s infinite;
+}
+@keyframes redpulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(0,170,255,0); }
+  50% { box-shadow: 0 0 20px 4px rgba(0,170,255,0.3); }
+}
+.nav-hire:hover { background: #5cc8ff; }
+
+/* ── HERO ── */
+.hero {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  padding: 160px 32px 80px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 0;
+  border-bottom: 1px solid var(--border2);
+}
+
+.hero-left { padding-right: 48px; border-right: 1px solid var(--border2); }
+
+.hero-tag {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--red); margin-bottom: 40px;
+  border: 1px solid rgba(0,170,255,0.3);
+  padding: 7px 14px;
+}
+.hero-tag::before { content: '▶'; font-size: 8px; }
+
+.hero-name {
+  font-family: var(--mono);
+  font-size: clamp(3.5rem, 7vw, 6.5rem);
+  font-weight: 700;
+  letter-spacing: -.03em;
+  line-height: .92;
+  margin-bottom: 24px;
+}
+.hero-name .first { color: var(--text); display: block; }
+.hero-name .last {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--red);
+  display: block;
+}
+
+.hero-line {
+  width: 48px; height: 1px; background: var(--red);
+  margin-bottom: 28px;
+}
+
+.hero-desc {
+  font-family: var(--sans);
+  font-size: 15px; font-weight: 300;
+  color: var(--muted); line-height: 1.8;
+  max-width: 480px; margin-bottom: 40px;
+}
+.hero-desc strong { color: var(--text); font-weight: 500; }
+
+.hero-opinion {
+  border-left: 2px solid var(--red);
+  padding: 14px 20px;
+  background: var(--red-dim);
+  font-size: 12px; font-style: italic;
+  color: var(--text); line-height: 1.7;
+  margin-bottom: 44px;
+}
+
+.hero-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn-red {
+  background: var(--red); color: #000;
+  font-family: var(--mono); font-weight: 700;
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  padding: 14px 28px; border: none; cursor: pointer;
+  text-decoration: none; display: inline-block;
+  transition: background .2s, transform .15s;
+}
+.btn-red:hover { background: #5cc8ff; transform: translateY(-2px); }
+.btn-ghost {
+  background: transparent; color: var(--muted);
+  font-family: var(--mono); font-weight: 500;
+  font-size: 11px; letter-spacing: .12em; text-transform: uppercase;
+  padding: 14px 28px;
+  border: 1px solid var(--border2); cursor: pointer;
+  text-decoration: none; display: inline-block;
+  transition: border-color .2s, color .2s;
+}
+.btn-ghost:hover { border-color: var(--red); color: var(--text); }
+
+/* HERO RIGHT — STATS PANEL */
+.hero-right {
+  padding-left: 36px;
+  display: flex; flex-direction: column; gap: 0;
+}
+.panel-title {
+  font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--muted); padding-bottom: 12px;
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 0;
+}
+.stat-row {
+  display: flex; flex-direction: column;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border2);
+  transition: background .2s;
+}
+.stat-row:hover { background: var(--bg2); padding-left: 12px; }
+.stat-key { font-size: 9px; letter-spacing: .16em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.stat-val {
+  font-size: 2rem; font-weight: 700; letter-spacing: -.03em;
+  color: var(--text); line-height: 1;
+}
+.stat-val .unit { font-size: .9rem; color: var(--muted); font-weight: 300; margin-left: 4px; }
+.stat-sub { font-size: 10px; color: var(--red); margin-top: 4px; }
+
+.live-badge {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid rgba(0,255,106,0.2);
+  background: rgba(0,255,106,0.04);
+}
+.live-badge .lb-top {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 9px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--green); margin-bottom: 8px;
+}
+.lb-dot {
+  width: 6px; height: 6px; background: var(--green); border-radius: 50%;
+  animation: blink 1.5s infinite;
+}
+.live-badge p { font-size: 11px; color: var(--muted); line-height: 1.6; }
+.live-badge p b { color: var(--text); }
+
+/* ── PRODUCTS ── */
+.products {
+  position: relative; z-index: 1;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--border2);
+}
+.section-header {
+  display: flex; align-items: baseline; justify-content: space-between;
+  padding: 32px 0 40px;
+  border-bottom: 1px solid var(--border2);
+  margin-bottom: 0;
+}
+.sh-left { display: flex; align-items: baseline; gap: 20px; }
+.sh-tag { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--red); }
+.sh-title {
+  font-size: clamp(1.6rem, 3vw, 2.5rem);
+  font-weight: 700; letter-spacing: -.03em;
+}
+.sh-right { font-size: 11px; color: var(--muted); }
+
+.products-table { width: 100%; border-collapse: collapse; }
+.products-table thead tr {
+  border-bottom: 1px solid var(--border2);
+}
+.products-table thead th {
+  text-align: left; padding: 14px 0;
+  font-size: 9px; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--muted); font-weight: 400;
+}
+.products-table thead th:not(:first-child) { padding-left: 24px; }
+
+.product-row {
+  border-bottom: 1px solid var(--border2);
+  cursor: pointer;
+  transition: background .15s;
+}
+.product-row:hover { background: var(--bg2); }
+.product-row td { padding: 28px 0; vertical-align: top; }
+.product-row td:not(:first-child) { padding-left: 24px; }
+
+.pr-num { font-size: 11px; color: var(--muted); width: 40px; padding-top: 4px; }
+.pr-name {
+  font-size: 1.2rem; font-weight: 600;
+  letter-spacing: -.02em; margin-bottom: 8px;
+}
+.pr-desc { font-size: 12px; color: var(--muted); line-height: 1.7; max-width: 440px; }
+.pr-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.pr-tag {
+  font-size: 9px; letter-spacing: .1em; text-transform: uppercase;
+  padding: 4px 10px; border: 1px solid var(--border2);
+  color: var(--muted);
+}
+.product-row:hover .pr-tag { border-color: var(--red); color: var(--red); }
+.pr-cta {
+  font-size: 11px; color: var(--red);
+  letter-spacing: .08em; white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
+}
+.pr-cta::after {
+  content: '→';
+  transition: transform .2s;
+}
+.product-row:hover .pr-cta::after { transform: translateX(6px); }
+.pr-time {
+  font-size: 10px; color: var(--amber);
+  white-space: nowrap;
+}
+
+/* ── SERVICES ── */
+.services {
+  position: relative; z-index: 1;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--border2);
+}
+.services-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border2); margin-top: 0; }
+.svc {
+  background: var(--bg);
+  padding: 36px 32px;
+  transition: background .2s;
+  position: relative;
+}
+.svc:hover { background: var(--bg2); }
+.svc-num { font-size: 9px; color: var(--muted); letter-spacing: .15em; margin-bottom: 20px; }
+.svc-name {
+  font-size: 1.1rem; font-weight: 600;
+  letter-spacing: -.02em; margin-bottom: 10px;
+}
+.svc-desc { font-size: 12px; color: var(--muted); line-height: 1.8; }
+.svc-speed {
+  margin-top: 16px;
+  font-size: 10px; color: var(--amber);
+  display: flex; align-items: center; gap: 6px;
+}
+.svc-speed::before { content: '⚡'; }
+.svc:hover .svc-name { color: var(--red); }
+
+/* ── MANIFESTO ── */
+.manifesto {
+  position: relative; z-index: 1;
+  padding: 80px 32px;
+  border-bottom: 1px solid var(--border2);
+  display: grid; grid-template-columns: 1fr 1fr; gap: 64px;
+  align-items: center;
+}
+.mf-label { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--red); margin-bottom: 28px; }
+.mf-lines { display: flex; flex-direction: column; gap: 0; }
+.mf-line {
+  display: flex; align-items: baseline; gap: 16px;
+  padding: 18px 0; border-bottom: 1px solid var(--border2);
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+  font-weight: 600; letter-spacing: -.02em;
+  transition: padding-left .2s, color .2s;
+}
+.mf-line:hover { padding-left: 12px; color: var(--red); }
+.mf-line span { font-size: 10px; color: var(--muted); font-weight: 300; letter-spacing: .12em; min-width: 28px; }
+
+.mf-right {}
+.mf-big {
+  font-size: clamp(4rem, 8vw, 7rem);
+  font-weight: 700; letter-spacing: -.05em; line-height: .9;
+  margin-bottom: 20px;
+}
+.mf-big .r { color: var(--red); }
+.mf-big .d { color: transparent; -webkit-text-stroke: 1px var(--border2); }
+.mf-caption { font-size: 12px; color: var(--muted); line-height: 1.8; }
+.mf-caption b { color: var(--text); }
+
+/* ── STACK ── */
+.stack {
+  position: relative; z-index: 1;
+  padding: 0 32px;
+  border-bottom: 1px solid var(--border2);
+}
+.stack-row {
+  display: flex; align-items: stretch;
+  border-bottom: 1px solid var(--border2);
+}
+.stack-row:last-child { border-bottom: none; }
+.stack-cat-label {
+  width: 160px; min-width: 160px;
+  padding: 24px 0;
+  border-right: 1px solid var(--border2);
+  font-size: 9px; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--muted);
+  display: flex; align-items: center;
+}
+.stack-items-row {
+  flex: 1; padding: 24px 28px;
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+.si {
+  font-size: 11px; font-weight: 500; letter-spacing: .04em;
+  padding: 6px 14px; border: 1px solid var(--border2);
+  color: var(--text); background: var(--bg2);
+  transition: all .2s;
+}
+.si:hover { border-color: var(--red); color: var(--red); background: var(--red-dim); }
+
+/* ── HIRE ME BOX ── */
+.hirebox {
+  position: relative; z-index: 1;
+  padding: 80px 32px;
+  border-bottom: 1px solid var(--border2);
+  display: grid; grid-template-columns: 1fr 420px; gap: 64px; align-items: start;
+}
+.hb-left {}
+.hb-label { font-size: 9px; letter-spacing: .2em; text-transform: uppercase; color: var(--red); margin-bottom: 24px; }
+.hb-title {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 700; letter-spacing: -.03em; line-height: 1;
+  margin-bottom: 20px;
+}
+.hb-sub { font-size: 13px; color: var(--muted); line-height: 1.8; max-width: 460px; margin-bottom: 36px; }
+.hb-links { display: flex; flex-direction: column; gap: 0; }
+.hb-link {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 0; border-bottom: 1px solid var(--border2);
+  text-decoration: none; color: var(--text);
+  font-size: 12px; letter-spacing: .04em;
+  transition: padding-left .2s, color .2s;
+}
+.hb-link:hover { padding-left: 12px; color: var(--red); }
+.hb-link .hl-platform { color: var(--muted); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; }
+.hb-link .hl-arrow { color: var(--muted); transition: transform .2s; }
+.hb-link:hover .hl-arrow { transform: translateX(6px); color: var(--red); }
+
+.hb-right {
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+}
+.hb-panel-head {
+  background: var(--red); color: #050a12;
+  padding: 12px 20px; font-size: 10px; font-weight: 600;
+  letter-spacing: .14em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 10px;
+}
+.hb-panel-body { padding: 24px; }
+.hb-field { margin-bottom: 20px; }
+.hb-field label { font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 6px; }
+.hb-field-val { font-size: 13px; color: var(--text); }
+.hb-field-val a { color: var(--red); text-decoration: none; }
+.hb-field-val a:hover { text-decoration: underline; }
+.hb-divider { height: 1px; background: var(--border2); margin: 20px 0; }
+.response-time {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px; color: var(--green); margin-top: 20px;
+}
+.rt-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: blink 1.5s infinite; }
+
+/* ── FOOTER ── */
+footer {
+  position: relative; z-index: 1;
+  padding: 0 32px; height: 52px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid var(--border2);
+  font-size: 10px; letter-spacing: .1em; color: var(--muted);
+}
+footer span b { color: var(--red); }
+
+/* ── REVEAL ── */
+.reveal { opacity: 0; transform: translateY(16px); transition: opacity .5s ease, transform .5s ease; }
+.reveal.in { opacity: 1; transform: none; }
+
+/* ── MOBILE ── */
+@media (max-width: 860px) {
+  .statusbar { display: none; }
+  nav { top: 0; padding: 0 20px; }
+  .nav-links { display: none; }
+  .hero { grid-template-columns: 1fr; padding: 100px 20px 60px; gap: 40px; }
+  .hero-left { border-right: none; padding-right: 0; }
+  .hero-right { padding-left: 0; border-top: 1px solid var(--border2); padding-top: 32px; }
+  .products { padding: 0 20px; }
+  .products-table thead { display: none; }
+  .product-row td { display: block; padding: 8px 0; }
+  .product-row td:first-child { padding-top: 20px; }
+  .product-row td:last-child { padding-bottom: 20px; }
+  .services { padding: 0 20px; }
+  .services-grid { grid-template-columns: 1fr; }
+  .manifesto { grid-template-columns: 1fr; padding: 60px 20px; gap: 40px; }
+  .stack { padding: 0 20px; }
+  .stack-cat-label { width: 100px; min-width: 100px; font-size: 8px; }
+  .hirebox { grid-template-columns: 1fr; padding: 60px 20px; gap: 40px; }
+  footer { padding: 0 20px; }
+  .sh-right { display: none; }
+}
+</style>
+</head>
+<body>
+
+<div id="cur"></div>
+<div id="cur-ring"></div>
+
+<!-- STATUS BAR -->
+<div class="statusbar">
+  <div class="sb-left">
+    <span>RISHAB.SAH/v2026</span>
+    <span class="active">OPEN TO WORK</span>
+    <span>RESPONSE &lt;2HR</span>
+  </div>
+  <div class="ticker">
+    <span class="ticker-item">BUILD_SPEED <b>FAST</b></span>
+    <span class="ticker-item">SHIP_RATE <b>100%</b></span>
+    <span class="ticker-item">SAAS_MVPS_BUILT <b>03</b></span>
+    <span class="ticker-item">STACK <b>FULLSTACK</b></span>
+    <span class="ticker-item">MOBILE <b>✓</b></span>
+    <span class="ticker-item">AI <b>✓</b></span>
+  </div>
+  <div class="sb-right">
+    <span id="clock">--:--:--</span>
+    <span>IST</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-id">RISHAB <span>SAH</span></div>
+  <div class="nav-links">
+    <a href="#products">Products</a>
+    <a href="#services">Services</a>
+    <a href="#stack">Stack</a>
+    <a href="#hire">Hire</a>
+  </div>
+  <a href="mailto:rishabsah1313@gmail.com" class="nav-hire">&#9654; Hire Me Now</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-tag">Builder · Shipper · Operator</div>
+    <h1 class="hero-name">
+      <span class="first">RISHAB</span>
+      <span class="last">SAH.</span>
+    </h1>
+    <div class="hero-line"></div>
+    <p class="hero-desc">
+      Fullstack developer who <strong>thinks like a founder</strong> and builds like one too.
+      3 production SaaS products already live. I don't do long timelines —
+      I get your idea <strong>from brief to shipped in days</strong>, not months.
+      Web · Mobile · AI · Payments. All covered.
+    </p>
+    <div class="hero-opinion">
+      "Most devs build features. I build businesses. There's a difference —
+      and you'll feel it the moment we start working."
+    </div>
+    <div class="hero-btns">
+      <a href="#hire" class="btn-red">&#9654; &nbsp;Start a Project Today</a>
+      <a href="#products" class="btn-ghost">See What I've Built</a>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="panel-title">// LIVE STATS</div>
+    <div class="stat-row">
+      <div class="stat-key">SaaS MVPs Shipped</div>
+      <div class="stat-val">03</div>
+      <div class="stat-sub">↑ All production-grade, all live</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-key">Avg. Days to First Demo</div>
+      <div class="stat-val">5–7<span class="unit">days</span></div>
+      <div class="stat-sub">↑ Brief → working product</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-key">Time to Start Your Project</div>
+      <div class="stat-val">0<span class="unit">days</span></div>
+      <div class="stat-sub">↑ Available right now</div>
+    </div>
+    <div class="stat-row">
+      <div class="stat-key">Technologies Covered</div>
+      <div class="stat-val">12+</div>
+      <div class="stat-sub">↑ Web · Mobile · AI · DB · DevOps</div>
+    </div>
+    <div class="live-badge">
+      <div class="lb-top"><div class="lb-dot"></div> Status: Actively Looking</div>
+      <p>Taking on <b>new projects immediately</b>. Slots fill fast — reach out today.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRODUCTS -->
+<section class="products" id="products">
+  <div class="section-header reveal">
+    <div class="sh-left">
+      <div class="sh-tag">// 01</div>
+      <div class="sh-title">Products I've Built</div>
+    </div>
+    <div class="sh-right">3 MVPs · All production-ready · All shippable as your product</div>
+  </div>
+  <table class="products-table">
+    <thead>
+      <tr>
+        <th style="width:40px">#</th>
+        <th>Product</th>
+        <th style="width:200px">Stack</th>
+        <th style="width:120px">Built In</th>
+        <th style="width:140px">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="product-row reveal">
+        <td class="pr-num">01</td>
+        <td>
+          <div class="pr-name">Admin Dashboard + SaaS Starter</div>
+          <div class="pr-desc">Full auth, role-based access, landing page, admin panel, and Razorpay billing — the complete boilerplate for any SaaS. Customisable in days.</div>
+        </td>
+        <td><div class="pr-tags"><span class="pr-tag">Next.js</span><span class="pr-tag">MongoDB</span><span class="pr-tag">Auth</span><span class="pr-tag">Razorpay</span></div></td>
+        <td class="pr-time">⚡ ~10 days</td>
+        <td><div class="pr-cta">License this</div></td>
+      </tr>
+      <tr class="product-row reveal">
+        <td class="pr-num">02</td>
+        <td>
+          <div class="pr-name">AI Customer Support Tool</div>
+          <div class="pr-desc">LLM-powered assistant trained on your docs. Handles 80% of queries autonomously. Drop it into any existing product via API in hours.</div>
+        </td>
+        <td><div class="pr-tags"><span class="pr-tag">Python</span><span class="pr-tag">LLM</span><span class="pr-tag">React</span><span class="pr-tag">Node.js</span></div></td>
+        <td class="pr-time">⚡ ~7 days</td>
+        <td><div class="pr-cta">Add to product</div></td>
+      </tr>
+      <tr class="product-row reveal">
+        <td class="pr-num">03</td>
+        <td>
+          <div class="pr-name">Automation Engine — Mini Zapier</div>
+          <div class="pr-desc">Lightweight workflow automation platform. Webhooks, triggers, scheduled jobs, multi-app connections. White-label and deploy as your own product.</div>
+        </td>
+        <td><div class="pr-tags"><span class="pr-tag">Node.js</span><span class="pr-tag">React</span><span class="pr-tag">SQL</span><span class="pr-tag">Webhooks</span></div></td>
+        <td class="pr-time">⚡ ~12 days</td>
+        <td><div class="pr-cta">White-label it</div></td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- SERVICES -->
+<section class="services" id="services">
+  <div class="section-header reveal">
+    <div class="sh-left">
+      <div class="sh-tag">// 02</div>
+      <div class="sh-title">What I Build For You</div>
+    </div>
+    <div class="sh-right">Fixed scope · Fixed price · Fast delivery</div>
+  </div>
+  <div class="services-grid">
+    <div class="svc reveal">
+      <div class="svc-num">SVC — 01</div>
+      <div class="svc-name">SaaS MVP Development</div>
+      <div class="svc-desc">Full product from scratch. Auth, billing, dashboard, APIs, deployment. You get a working product that's ready to sell — not a prototype that needs more work.</div>
+      <div class="svc-speed">First demo in 5–7 days</div>
+    </div>
+    <div class="svc reveal">
+      <div class="svc-num">SVC — 02</div>
+      <div class="svc-name">Mobile App (iOS + Android)</div>
+      <div class="svc-desc">React Native apps that feel genuinely native. Offline support, push notifications, biometric auth. One codebase, both platforms, delivered fast.</div>
+      <div class="svc-speed">Working build in under 2 weeks</div>
+    </div>
+    <div class="svc reveal">
+      <div class="svc-num">SVC — 03</div>
+      <div class="svc-name">AI Integration</div>
+      <div class="svc-desc">Add LLM features to your existing product. Chatbots, smart search, content generation, classification. I understand the business case, not just the API call.</div>
+      <div class="svc-speed">Integrated and tested in days</div>
+    </div>
+    <div class="svc reveal">
+      <div class="svc-num">SVC — 04</div>
+      <div class="svc-name">Backend & API Engineering</div>
+      <div class="svc-desc">Scalable Node.js / Python backends. Payment flows, third-party integrations, database design, DevOps. Production-grade code, not tutorial-quality.</div>
+      <div class="svc-speed">Clean, documented, deployed fast</div>
+    </div>
+    <div class="svc reveal">
+      <div class="svc-num">SVC — 05</div>
+      <div class="svc-name">Automation & Internal Tools</div>
+      <div class="svc-desc">Custom workflow automation, webhook systems, scheduled pipelines, internal dashboards. The stuff that saves your team 10 hours a week.</div>
+      <div class="svc-speed">Deployed and running fast</div>
+    </div>
+    <div class="svc reveal" style="background: var(--red-dim); border: 1px solid rgba(0,170,255,0.2);">
+      <div class="svc-num" style="color:var(--red)">ALWAYS —</div>
+      <div class="svc-name">I Understand the Business</div>
+      <div class="svc-desc">I don't just code what you say. I ask why, I challenge assumptions, and I build what will actually make you money — not what sounds good in a brief.</div>
+      <div class="svc-speed">This is what separates me from other devs</div>
+    </div>
+  </div>
+</section>
+
+<!-- MANIFESTO -->
+<section class="manifesto">
+  <div>
+    <div class="mf-label reveal">// How I Think</div>
+    <div class="mf-lines">
+      <div class="mf-line reveal"><span>01</span> Ship now. Iterate later.</div>
+      <div class="mf-line reveal"><span>02</span> Speed is a feature.</div>
+      <div class="mf-line reveal"><span>03</span> Revenue > perfection.</div>
+      <div class="mf-line reveal"><span>04</span> I build MVPs, not monuments.</div>
+      <div class="mf-line reveal"><span>05</span> Understand the business first.</div>
+      <div class="mf-line reveal"><span>06</span> No code left unshipped.</div>
+    </div>
+  </div>
+  <div class="mf-right reveal">
+    <div class="mf-big">
+      <span class="r">FA</span><span class="d">ST</span>
+    </div>
+    <div class="mf-caption">
+      <b>Fast isn't a shortcut — it's a skill.</b> I've built 3 SaaS products end-to-end.
+      I know what to build, what to skip, and how to get something in users' hands
+      before your competitor finishes their Figma file.
+    </div>
+  </div>
+</section>
+
+<!-- STACK -->
+<section class="stack" id="stack">
+  <div class="section-header reveal">
+    <div class="sh-left">
+      <div class="sh-tag">// 03</div>
+      <div class="sh-title">Tech Stack</div>
+    </div>
+    <div class="sh-right">Full coverage — nothing outsourced</div>
+  </div>
+  <div class="stack-row reveal">
+    <div class="stack-cat-label">Frontend</div>
+    <div class="stack-items-row">
+      <span class="si">React.js</span><span class="si">Next.js 14</span><span class="si">React Native</span><span class="si">TypeScript</span><span class="si">Tailwind CSS</span><span class="si">Expo</span>
+    </div>
+  </div>
+  <div class="stack-row reveal">
+    <div class="stack-cat-label">Backend</div>
+    <div class="stack-items-row">
+      <span class="si">Node.js</span><span class="si">Express</span><span class="si">Fastify</span><span class="si">Python</span><span class="si">FastAPI</span><span class="si">REST</span><span class="si">GraphQL</span><span class="si">WebSockets</span>
+    </div>
+  </div>
+  <div class="stack-row reveal">
+    <div class="stack-cat-label">Database</div>
+    <div class="stack-items-row">
+      <span class="si">MongoDB</span><span class="si">PostgreSQL</span><span class="si">MySQL</span><span class="si">Redis</span><span class="si">Supabase</span>
+    </div>
+  </div>
+  <div class="stack-row reveal">
+    <div class="stack-cat-label">AI / ML</div>
+    <div class="stack-items-row">
+      <span class="si">OpenAI API</span><span class="si">LangChain</span><span class="si">Claude API</span><span class="si">Embeddings</span><span class="si">RAG</span>
+    </div>
+  </div>
+  <div class="stack-row reveal">
+    <div class="stack-cat-label">Infra</div>
+    <div class="stack-items-row">
+      <span class="si">Razorpay</span><span class="si">Stripe</span><span class="si">Firebase</span><span class="si">Vercel</span><span class="si">AWS</span><span class="si">Docker</span><span class="si">CI/CD</span>
+    </div>
+  </div>
+</section>
+
+<!-- HIRE -->
+<section class="hirebox" id="hire">
+  <div class="hb-left reveal">
+    <div class="hb-label">// 04 — Let's Work</div>
+    <div class="hb-title">Your Idea.<br/>Live This Week.</div>
+    <div class="hb-sub">
+      I reply within 2 hours. We can scope your project today, start building tomorrow.
+      No lengthy discovery phases. No bloated timelines. Just fast, quality work.
+    </div>
+    <div class="hb-links">
+      <a href="mailto:rishabsah1313@gmail.com" class="hb-link">
+        <span>✉ &nbsp;rishabsah1313@gmail.com</span>
+        <span class="hl-platform">Email — Fastest</span>
+        <span class="hl-arrow">→</span>
+      </a>
+      <a href="https://wa.me/918859972489" class="hb-link">
+        <span>💬 &nbsp;WhatsApp</span>
+        <span class="hl-platform">Instant message</span>
+        <span class="hl-arrow">→</span>
+      </a>
+      <a href="https://peerlist.io/rishabsah" class="hb-link">
+        <span>◉ &nbsp;Peerlist</span>
+        <span class="hl-platform">Dev profile</span>
+        <span class="hl-arrow">→</span>
+      </a>
+      <a href="https://contra.com/rishabsah" class="hb-link">
+        <span>⬡ &nbsp;Contra</span>
+        <span class="hl-platform">Freelance profile</span>
+        <span class="hl-arrow">→</span>
+      </a>
+      <a href="https://github.com/rishabsah13" class="hb-link">
+        <span>⌥ &nbsp;GitHub</span>
+        <span class="hl-platform">See the code</span>
+        <span class="hl-arrow">→</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="hb-right reveal">
+    <div class="hb-panel-head">&#9654; &nbsp;PROJECT INTAKE — OPEN</div>
+    <div class="hb-panel-body">
+      <div class="hb-field">
+        <label>Name</label>
+        <div class="hb-field-val">Rishab Sah</div>
+      </div>
+      <div class="hb-field">
+        <label>Role</label>
+        <div class="hb-field-val">Fullstack Developer · Builder · Operator</div>
+      </div>
+      <div class="hb-field">
+        <label>Specialisation</label>
+        <div class="hb-field-val">SaaS · Mobile · AI · Payments · Automation</div>
+      </div>
+      <div class="hb-divider"></div>
+      <div class="hb-field">
+        <label>Email</label>
+        <div class="hb-field-val"><a href="mailto:rishabsah1313@gmail.com">rishabsah1313@gmail.com</a></div>
+      </div>
+      <div class="hb-field">
+        <label>Location</label>
+        <div class="hb-field-val">India — Remote Worldwide</div>
+      </div>
+      <div class="hb-field">
+        <label>Availability</label>
+        <div class="hb-field-val" style="color:var(--green)">● Immediate — Starting Today</div>
+      </div>
+      <div class="hb-divider"></div>
+      <div class="response-time">
+        <div class="rt-dot"></div>
+        Avg. response time: under 2 hours
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <span>© 2026 — <b>RISHAB SAH</b> — I build fast. I ship faster.</span>
+  <span>Available for freelance · contract · co-founder roles</span>
+</footer>
+
+<script>
+// Cursor
+const cur = document.getElementById('cur');
+const ring = document.getElementById('cur-ring');
+let tx = 0, ty = 0;
+document.addEventListener('mousemove', e => {
+  tx = e.clientX; ty = e.clientY;
+  cur.style.left = tx + 'px'; cur.style.top = ty + 'px';
+  setTimeout(() => { ring.style.left = tx + 'px'; ring.style.top = ty + 'px'; }, 55);
+});
+document.querySelectorAll('a,button').forEach(el => {
+  el.addEventListener('mouseenter', () => { cur.style.width = '16px'; cur.style.height = '16px'; ring.style.width = '48px'; ring.style.height = '48px'; });
+  el.addEventListener('mouseleave', () => { cur.style.width = '6px'; cur.style.height = '6px'; ring.style.width = '28px'; ring.style.height = '28px'; });
+});
+
+// Clock IST
+function tick() {
+  const el = document.getElementById('clock');
+  if (!el) return;
+  const now = new Date();
+  const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000 - now.getTimezoneOffset() * 60000));
+  const h = String(ist.getUTCHours()).padStart(2,'0');
+  const m = String(ist.getUTCMinutes()).padStart(2,'0');
+  const s = String(ist.getUTCSeconds()).padStart(2,'0');
+  el.textContent = `${h}:${m}:${s}`;
+}
+tick(); setInterval(tick, 1000);
+
+// Scroll reveal
+const obs = new IntersectionObserver(entries => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) setTimeout(() => e.target.classList.add('in'), i * 60);
+  });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(r => obs.observe(r));
+</script>
+</body>
+</html>
